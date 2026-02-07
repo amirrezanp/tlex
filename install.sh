@@ -1,4 +1,3 @@
-# install.sh
 #!/bin/bash
 # install.sh for T-LeX - Professional installer with Docker, progress, and auto-launch
 
