@@ -48,7 +48,7 @@ install_docker() {
         echo -e "${YELLOW}Installing Docker...${NC}"
         sudo apt-get update -y &> /dev/null &
         spinner $! "Updating"
-        sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common &> /dev/null &
+        sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common unzip &> /dev/null &
         spinner $! "Installing Docker deps"
         curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
         echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
@@ -113,20 +113,29 @@ sudo chmod +x /usr/local/bin/tlex
 
 export PATH=$PATH:/usr/local/bin
 
-# Docker for Xray
-echo '{}' | sudo tee xray_config.json > /dev/null  # Default empty config
+# Download Xray
+curl -L -o xray.zip https://github.com/XTLS/Xray-core/releases/download/v1.8.0/Xray-linux-64.zip &> /dev/null &
+spinner $! "Downloading Xray"
+unzip -o xray.zip xray &> /dev/null
+sudo mv xray /usr/local/bin/
+sudo chmod +x /usr/local/bin/xray
+echo -e "${GREEN}Xray installed!${NC}"
 
-cat << EOF | sudo tee docker-compose.yml > /dev/null
+# Docker for Xray
+rm -rf xray_config.json
+echo '{}' > xray_config.json  # Create file
+
+cat << EOF > docker-compose.yml
 services:
   xray:
     image: teddysun/xray:latest
     restart: always
     volumes:
-      - ./xray_config.json:/etc/xray/config.json
+      - ./xray_config.json:/etc/xray/config.json:ro
     ports:
       - "443:443"
 EOF
-sudo docker compose up -d &> /dev/null &
+sudo docker compose up -d --force-recreate &> /dev/null &
 spinner $! "Starting Xray Docker"
 echo -e "${GREEN}Xray Docker started!${NC}"
 
