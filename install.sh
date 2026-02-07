@@ -1,6 +1,6 @@
 # install.sh
 #!/bin/bash
-# install.sh for T-LeX - Professional installer with progress, structure fix, and auto-launch
+# install.sh for T-LeX - Professional installer with Docker, progress, and auto-launch
 
 # Colors for beauty
 RED='\033[0;31m'
@@ -42,13 +42,33 @@ show_logo() {
     echo ""
 }
 
+# Check and install Docker
+install_docker() {
+    if ! command -v docker &> /dev/null; then
+        echo -e "${YELLOW}Installing Docker...${NC}"
+        sudo apt-get update -y &> /dev/null &
+        spinner $! "Updating"
+        sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common &> /dev/null &
+        spinner $! "Installing Docker deps"
+        curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+        echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+        sudo apt-get update -y &> /dev/null &
+        spinner $! "Updating with Docker repo"
+        sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin &> /dev/null &
+        spinner $! "Installing Docker"
+        sudo systemctl start docker
+        sudo systemctl enable docker
+        echo -e "${GREEN}Docker installed!${NC}"
+    else
+        echo -e "${GREEN}Docker already installed.${NC}"
+    fi
+}
+
 # Installation
 show_logo
 echo -e "${CYAN}Starting T-LeX Installation...${NC}"
 
-sudo apt update -y &> /dev/null &
-spinner $! "Updating packages"
-echo -e "${GREEN}Done!${NC}"
+install_docker
 
 sudo apt install -y git python3 python3-pip python3-venv certbot wireguard &> /dev/null &
 spinner $! "Installing prerequisites"
@@ -91,6 +111,20 @@ EOF
 sudo chmod +x /usr/local/bin/tlex
 
 export PATH=$PATH:/usr/local/bin
+
+# Docker for Xray
+cat << EOF | sudo tee docker-compose.yml > /dev/null
+version: '3'
+services:
+  xray:
+    image: teddysun/xray:latest
+    restart: always
+    volumes:
+      - ./xray_config.json:/etc/xray/config.json
+    ports:
+      - "443:443"
+EOF
+sudo docker compose up -d
 
 echo -e "${GREEN}T-LeX installed!${NC}"
 
