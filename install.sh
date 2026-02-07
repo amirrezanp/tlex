@@ -76,6 +76,7 @@ echo -e "${GREEN}Done!${NC}"
 
 REPO_DIR="/opt/tlex"
 sudo mkdir -p $REPO_DIR
+cd /opt  # Stable dir to avoid getcwd error
 if [ -d "$REPO_DIR/.git" ]; then
     sudo git -C $REPO_DIR pull &> /dev/null &
     spinner $! "Pulling latest"
@@ -113,8 +114,9 @@ sudo chmod +x /usr/local/bin/tlex
 export PATH=$PATH:/usr/local/bin
 
 # Docker for Xray
+echo '{}' | sudo tee xray_config.json > /dev/null  # Default empty config
+
 cat << EOF | sudo tee docker-compose.yml > /dev/null
-version: '3'
 services:
   xray:
     image: teddysun/xray:latest
@@ -124,7 +126,9 @@ services:
     ports:
       - "443:443"
 EOF
-sudo docker compose up -d
+sudo docker compose up -d &> /dev/null &
+spinner $! "Starting Xray Docker"
+echo -e "${GREEN}Xray Docker started!${NC}"
 
 echo -e "${GREEN}T-LeX installed!${NC}"
 

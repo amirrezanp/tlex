@@ -19,6 +19,5 @@ setup(
     ],
     description='Advanced Secure Port Forwarding Tunnel with TUI and Docker',
     author='Amirreza NP',
-
     url='https://github.com/amirrezanp/tlex',
 )
